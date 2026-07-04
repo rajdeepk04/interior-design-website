@@ -1,0 +1,50 @@
+CREATE DATABASE  interiord;
+USE interiord;
+
+CREATE TABLE users (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(100) NOT NULL,
+  email VARCHAR(150) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL,
+  last_login_at TIMESTAMP NULL DEFAULT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE  designs (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  title VARCHAR(150) NOT NULL,
+  category VARCHAR(80) NOT NULL,
+  image VARCHAR(255),
+  description TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE  wishlist (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  user_id INT,
+  design_id INT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+  FOREIGN KEY (design_id) REFERENCES designs(id) ON DELETE SET NULL
+);
+
+CREATE TABLE bookings (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  user_name VARCHAR(100) NOT NULL,
+  email VARCHAR(150) NOT NULL,
+  project_type VARCHAR(100) NOT NULL,
+  preferred_date DATE,
+  time_slot VARCHAR(40),
+  budget VARCHAR(80),
+  room_images TEXT,
+  requirements TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE  reviews (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  user_name VARCHAR(100) NOT NULL,
+  rating INT NOT NULL,
+  comment TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

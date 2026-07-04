@@ -1,0 +1,145 @@
+/* Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Background — Light Coffee Gradient */
+body {
+  height: 100vh;
+  background: linear-gradient(135deg, #f5efe6, #e6d5c3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Panel Section */
+.auth-panel {
+  width: 100%;
+  max-width: 420px;
+  padding: 20px;
+}
+
+/* Card Box */
+.panel-card {
+  background: #ffffff;
+  padding: 35px 30px;
+  border-radius: 14px;
+  box-shadow: 0 8px 25px rgba(120, 90, 60, 0.15);
+  text-align: center;
+  border: 1px solid #e2d3c0;
+}
+
+/* Small Heading */
+.panel-kicker {
+  font-size: 13px;
+  color: #8b6f47; /* Coffee Brown */
+  font-weight: 600;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Main Heading */
+.panel-card h2 {
+  font-size: 24px;
+  margin-bottom: 25px;
+  color: #5c4430; /* Dark Coffee */
+}
+
+/* Label Styling */
+form label {
+  display: block;
+  text-align: left;
+  margin-bottom: 18px;
+}
+
+/* Label Text */
+form label span {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 6px;
+  color: #6b4f3a;
+  font-weight: 500;
+}
+
+/* Input Box */
+form input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #d6c3b0;
+  font-size: 14px;
+  background: #faf7f2;
+  transition: 0.3s;
+}
+
+/* Input Focus */
+form input:focus {
+  outline: none;
+  border-color: #a67c52;
+  box-shadow: 0 0 6px rgba(166, 124, 82, 0.3);
+}
+
+/* Message Box */
+.auth-message {
+  margin: 12px 0;
+  font-size: 14px;
+  padding: 10px;
+  border-radius: 6px;
+  display: none;
+}
+
+/* Success Message */
+.auth-message.success {
+  background: #e9f7ef;
+  color: #1e8449;
+  border: 1px solid #b7e1cd;
+  display: block;
+}
+
+/* Error Message */
+.auth-message.error {
+  background: #fdecea;
+  color: #c0392b;
+  border: 1px solid #f5b7b1;
+  display: block;
+}
+
+/* Submit Button — Coffee Style */
+button {
+  width: 100%;
+  padding: 12px;
+  background: #a67c52; /* Coffee Brown */
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+/* Button Hover */
+button:hover {
+  background: #8b6f47;
+  transform: translateY(-1px);
+}
+
+/* Button Click */
+button:active {
+  transform: scale(0.98);
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .panel-card {
+    padding: 25px 20px;
+  }
+
+  .panel-card h2 {
+    font-size: 20px;
+  }
+}

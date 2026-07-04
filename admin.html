@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard | Luxe Interiors</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+  <div class="dashboard">
+    <header class="sidebar admin-topbar">
+      <div>
+        <p class="eyebrow">Secure Access</p>
+        <h1>Admin Panel</h1>
+        <p class="sidebar-copy">Manage the design portfolio, upload real images, and review contact inquiries from one place.</p>
+      </div>
+      <nav class="sidebar-nav">
+        <button type="button" data-section-target="designs" class="active">All Designs</button>
+        <button type="button" data-section-target="editor">Add or Edit Design</button>
+        <button type="button" data-section-target="bookings">Bookings</button>
+        <button type="button" data-section-target="inquiries">Inquiries</button>
+        <button type="button" data-section-target="feedback">Feedback</button>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="admin-badge" id="adminBadge">Signed in as admin</div>
+        <button type="button" class="logout-btn" id="logoutBtn">Logout</button>
+      </div>
+    </header>
+
+    <main class="main">
+      <header class="page-header">
+        <div>
+          <p class="eyebrow">Dashboard</p>
+          <h2 id="sectionHeading">Manage All Designs</h2>
+        </div>
+        <div class="status-pill" id="statusMessage">Ready</div>
+      </header>
+
+      <section id="designs" class="section active">
+        <div class="section-bar">
+          <h3>Portfolio Library</h3>
+          <button type="button" class="secondary-btn" id="createDesignBtn">Add New Design</button>
+        </div>
+        <div id="designList" class="grid"></div>
+      </section>
+
+      <section id="editor" class="section">
+        <div class="section-bar">
+          <h3 id="formHeading">Add New Design</h3>
+          <button type="button" class="secondary-btn" id="cancelEditBtn" hidden>Cancel Edit</button>
+        </div>
+        <form id="designForm" class="design-form" enctype="multipart/form-data">
+          <div class="form-grid">
+            <label>
+              <span>Title</span>
+              <input type="text" id="title" name="title" required>
+            </label>
+            <label>
+              <span>Category</span>
+              <select id="category" name="category" required>
+                <option value="residential">Residential</option>
+                <option value="commercial">Commercial</option>
+                <option value="kitchen">Kitchen</option>
+                <option value="bedroom">Bedroom</option>
+                <option value="bathroom">Bathroom</option>
+              </select>
+            </label>
+            <label>
+              <span>Style</span>
+              <input type="text" id="style" name="style" placeholder="Warm Minimal Luxury">
+            </label>
+            <label>
+              <span>Area</span>
+              <input type="text" id="area" name="area" placeholder="680 sq ft">
+            </label>
+            <label>
+              <span>Timeline</span>
+              <input type="text" id="timeline" name="timeline" placeholder="8 weeks">
+            </label>
+            <label>
+              <span>Year</span>
+              <input type="text" id="year" name="year" placeholder="2026">
+            </label>
+            <label>
+              <span>Main Image</span>
+              <input type="file" id="imageFile" name="image" accept="image/*">
+            </label>
+            <label>
+              <span>Main Image URL</span>
+              <input type="text" id="image" name="image" placeholder="/uploads/designs/example.jpg or https://...">
+            </label>
+            <label>
+              <span>Hero Image</span>
+              <input type="file" id="heroImageFile" name="heroImage" accept="image/*">
+            </label>
+            <label>
+              <span>Hero Image URL</span>
+              <input type="text" id="heroImage" name="heroImage" placeholder="/uploads/designs/example-hero.jpg or https://...">
+            </label>
+            <label class="full-width">
+              <span>Gallery Images</span>
+              <input type="file" id="galleryFiles" name="gallery" accept="image/*" multiple>
+            </label>
+            <label class="full-width">
+              <span>Gallery URLs</span>
+              <input type="text" id="gallery" name="gallery" placeholder="Comma-separated image URLs if you are not uploading files">
+            </label>
+            <label class="full-width">
+              <span>Short Description</span>
+              <textarea id="description" name="description" rows="4" placeholder="Short card description"></textarea>
+            </label>
+            <label class="full-width">
+              <span>Long Description</span>
+              <textarea id="longDescription" name="longDescription" rows="6" placeholder="Full design story for the detail page"></textarea>
+            </label>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="primary-btn" id="submitDesignBtn">Save Design</button>
+            <button type="button" class="secondary-btn" id="resetFormBtn">Reset Form</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="bookings" class="section">
+        <div class="section-bar">
+          <h3>Appointment Bookings</h3>
+          <button type="button" class="secondary-btn" id="refreshBookingsBtn">Refresh</button>
+        </div>
+        <div id="bookingList" class="inquiry-list"></div>
+      </section>
+
+      <section id="inquiries" class="section">
+        <div class="section-bar">
+          <h3>Client Inquiries</h3>
+          <button type="button" class="secondary-btn" id="refreshInquiriesBtn">Refresh</button>
+        </div>
+        <div id="inquiryList" class="inquiry-list"></div>
+      </section>
+
+      <section id="feedback" class="section">
+        <div class="section-bar">
+          <h3>User Feedback</h3>
+          <button type="button" class="secondary-btn" id="refreshFeedbackBtn">Refresh</button>
+        </div>
+        <div id="feedbackList" class="inquiry-list"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="js/design-data.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

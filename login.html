@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | Luxe Interiors</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/login.css">
+  <!-- <link rel="stylesheet" href="css/assistant.css"> -->
+</head>
+<body>
+  <main class="auth-shell">
+    <section class="auth-hero">
+      <p class="eyebrow">Member Access</p>
+      <h1>Return to your design dashboard.</h1>
+      <p class="hero-copy">Track saved concepts, continue consultations, and revisit your personalized interior moodboards.</p>
+      <div class="hero-points">
+        <span>Curated room ideas</span>
+        <span>Saved wishlist items</span>
+        <span>Priority consultation updates</span>
+      </div>
+    </section>
+
+    <section class="auth-panel">
+      <div class="panel-card">
+        <p class="panel-kicker">Welcome Back</p>
+        <h2>Sign in to Luxe Interiors</h2>
+        <form data-auth class="auth-form">
+          <label>
+            <span>Email Address</span>
+            <input type="email" name="email" placeholder="you@example.com" required>
+          </label>
+          <label class="password-field">
+            <span>Password</span>
+            <div class="password-input">
+              <input type="password" name="password" placeholder="Enter your password" required>
+              <button type="button" class="toggle-password" data-toggle-password aria-label="Show password">Show</button>
+            </div>
+          </label>
+          <div class="auth-tools">
+            <label class="remember-me">
+              <input type="checkbox" name="rememberMe">
+              <span>Remember me</span>
+            </label>
+            <a href="forgot-password.html" class="auth-link">Forgot password?</a>
+          </div>
+          <div class="panel-row">
+            <span class="muted">Sign in to access your saved designs and bookings</span>
+            <a href="register.html" class="auth-link">Don't have an account?</a>
+          </div>
+          <div class="admin-entry">
+            <span class="muted">Studio team or admin?</span>
+            <a href="admin-login.html" class="auth-link">Use admin login</a>
+          </div>
+          <div class="auth-message" data-auth-message hidden></div>
+          <button type="submit">Sign In</button>
+        </form>
+      </div>
+    </section>
+  </main>
+  <script src="js/auth.js"></script>
+  <!-- <div class="ai-assistant" data-ai-assistant data-ai-endpoint="/api/assistant">
+    <div class="ai-assistant__panel">
+      <div class="ai-assistant__header">
+        <p class="ai-assistant__eyebrow">AI Assistant</p>
+        <h3>Talk to Luxe</h3>
+        <p>Ask about designs, wishlist, booking, or how to contact the studio.</p>
+      </div>
+      <div class="ai-assistant__messages" data-ai-messages>
+        <div class="ai-assistant__bubble bot">Hi, I'm your Luxe assistant. Ask me anything about the website or your design journey.</div>
+      </div>
+      <div class="ai-assistant__suggestions">
+        <button type="button" class="ai-assistant__suggestion" data-ai-suggestion="How do I book a consultation?">Book consultation</button>
+        <button type="button" class="ai-assistant__suggestion" data-ai-suggestion="How do I save designs?">Save designs</button>
+        <button type="button" class="ai-assistant__suggestion" data-ai-suggestion="How do I contact the studio?">Contact studio</button>
+      </div>
+      <form class="ai-assistant__form" data-ai-form>
+        <input type="text" placeholder="Ask something..." data-ai-input>
+        <button type="submit">Send</button>
+      </form>
+    </div>
+    <button type="button" class="ai-assistant__toggle" data-ai-toggle aria-label="Open AI assistant">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path class="icon-fill" d="M12 2.8c-3.8 0-6.9 3.1-6.9 6.9v1.3c0 .8-.3 1.5-.8 2.1l-1 1.1c-.9 1-.2 2.6 1.1 2.6h2.2c.5 2.6 2.8 4.4 5.4 4.4s4.9-1.8 5.4-4.4h2.2c1.4 0 2.1-1.6 1.1-2.6l-1-1.1c-.5-.6-.8-1.3-.8-2.1V9.7c0-3.8-3.1-6.9-6.9-6.9Z"></path>
+        <path d="M9.2 17.3c.5 1.1 1.6 1.8 2.8 1.8s2.3-.7 2.8-1.8"></path>
+        <path d="M8.4 10.3c.6-1 1.8-1.7 3.1-1.7 1.2 0 2.3.6 2.9 1.5"></path>
+        <path d="M9.4 13.2h.1"></path>
+        <path d="M14.5 13.2h.1"></path>
+      </svg>
+    </button>
+  </div> -->
+  <!-- <script src="js/assistant.js"></script> -->
+</body>
+</html>
+
