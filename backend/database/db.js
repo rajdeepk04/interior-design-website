@@ -249,6 +249,7 @@ async function initializeDatabase() {
     await ensureColumn("designs", "gallery", "`gallery` JSON");
     await ensureColumn("designs", "catalog_identity", "`catalog_identity` VARCHAR(255) DEFAULT NULL");
     await ensureColumn("designs", "is_hidden", "`is_hidden` TINYINT(1) NOT NULL DEFAULT 0");
+    await ensureColumn("designs", "is_archived", "`is_archived` TINYINT(1) NOT NULL DEFAULT 0");
     await ensureColumn("designs", "updated_at", "`updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
     await ensureColumn("reviews", "name", "`name` VARCHAR(100) NOT NULL DEFAULT 'Anonymous'");
     await ensureColumn("reviews", "user_name", "`user_name` VARCHAR(100) NOT NULL DEFAULT 'Anonymous'");
@@ -256,6 +257,11 @@ async function initializeDatabase() {
     await ensureColumn("reviews", "comment", "`comment` TEXT");
     await ensureColumn("reviews", "email", "`email` VARCHAR(150) DEFAULT ''");
     await ensureColumn("reviews", "page", "`page` VARCHAR(120) DEFAULT ''");
+    await ensureColumn("users", "avatar", "`avatar` VARCHAR(255) DEFAULT NULL");
+    // Soft-delete (archive) flags for admin-managed lists
+    await ensureColumn("contact", "is_archived", "`is_archived` TINYINT(1) NOT NULL DEFAULT 0");
+    await ensureColumn("bookings", "is_archived", "`is_archived` TINYINT(1) NOT NULL DEFAULT 0");
+    await ensureColumn("reviews", "is_archived", "`is_archived` TINYINT(1) NOT NULL DEFAULT 0");
 
     await ensureAdminUser();
     await seedInitialDesigns();

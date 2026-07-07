@@ -1,9 +1,13 @@
 const designModel = require("../models/designModel");
 
-const getDesigns = async (_req, res, next) => {
+const getDesigns = async (req, res, next) => {
   try {
-    const designs = await designModel.getAllDesigns();
-    res.json(designs);
+    const page = Number(req.query.page || 1);
+    const perPage = Number(req.query.perPage || 12);
+    const q = req.query.q || "";
+
+    const result = await designModel.getPaginatedDesigns({ page, perPage, q });
+    res.json(result);
   } catch (error) {
     next(error);
   }

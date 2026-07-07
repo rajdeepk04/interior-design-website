@@ -52,7 +52,14 @@ const uploadBookingImages = multer({
   }
 }).array("roomImages", 6);
 
+const uploadAvatar = multer({
+  storage: createStorage("avatars", "avatar"),
+  fileFilter,
+  limits: { fileSize: 2 * 1024 * 1024 }
+}).single("avatar");
+
 module.exports = {
   uploadDesignImages,
-  uploadBookingImages
+  uploadBookingImages,
+  uploadAvatar
 };

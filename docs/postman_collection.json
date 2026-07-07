@@ -1,0 +1,87 @@
+{
+  "info": {
+    "name": "Interior Design Website API",
+    "_postman_id": "interior-design-api-collection",
+    "description": "Example requests for local development. Set environment variable `baseUrl` to http://localhost:5000",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/api/health", "host": ["{{baseUrl}}"], "path": ["api","health"] }
+      }
+    },
+    {
+      "name": "Auth - Test",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/api/auth/test", "host": ["{{baseUrl}}"], "path": ["api","auth","test"] }
+      }
+    },
+    {
+      "name": "Designs - List",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/api/designs", "host": ["{{baseUrl}}"], "path": ["api","designs"] }
+      }
+    },
+    {
+      "name": "Designs - Get By ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/api/designs/:id", "host": ["{{baseUrl}}"], "path": ["api","designs",":id"] }
+      }
+    },
+    {
+      "name": "Auth - Register",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"test@example.com\",\n  \"password\": \"Test1234\"\n}" },
+        "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api","auth","register"] }
+      }
+    },
+    {
+      "name": "Auth - Login",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": { "mode": "raw", "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"Test1234\"\n}" },
+        "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api","auth","login"] }
+      }
+    },
+    {
+      "name": "Wishlist - Get (by userId)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/api/wishlist?userId=1", "host": ["{{baseUrl}}"], "path": ["api","wishlist"], "query": [{"key":"userId","value":"1"}] }
+      }
+    },
+    {
+      "name": "Wishlist - Add",
+      "request": {
+        "method": "POST",
+        "header": [ { "key": "Content-Type", "value": "application/json" } ],
+        "body": { "mode": "raw", "raw": "{\n  \"userId\": 1,\n  \"designId\": 1\n}" },
+        "url": { "raw": "{{baseUrl}}/api/wishlist", "host": ["{{baseUrl}}"], "path": ["api","wishlist"] }
+      }
+    },
+    {
+      "name": "Wishlist - Delete",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/api/wishlist/:id", "host": ["{{baseUrl}}"], "path": ["api","wishlist",":id"] }
+      }
+    }
+  ]
+}

@@ -203,6 +203,7 @@ async function updateDesign(req, res) {
 async function deleteDesign(req, res) {
   try {
     const designId = Number(req.params.id);
+    console.log('ADMIN DELETE DESIGN request by user:', req.user?.id, req.user?.role, 'designId:', designId);
     const existingDesign = await designModel.getDesignById(designId);
 
     if (!existingDesign) {
@@ -211,11 +212,11 @@ async function deleteDesign(req, res) {
       });
     }
 
-    await getDB().query("DELETE FROM designs WHERE id = ?", [designId]);
-    cleanupDesignAssets(existingDesign);
+    // Soft-delete (archive) the design to preserve assets and allow recovery
+    await getDB().query("UPDATE designs SET is_archived = 1 WHERE id = ?", [designId]);
 
     return res.json({
-      message: "Design deleted successfully."
+      message: "Design archived successfully."
     });
   } catch (_error) {
     return res.status(500).json({
@@ -271,6 +272,7 @@ async function getInquiries(_req, res) {
     const [rows] = await getDB().query(
       `SELECT id, name, email, phone, subject, message, created_at AS createdAt
        FROM contact
+       WHERE IFNULL(is_archived,0) = 0
        ORDER BY created_at DESC, id DESC`
     );
 
@@ -282,6 +284,18 @@ async function getInquiries(_req, res) {
   }
 }
 
+async function deleteInquiry(req, res) {
+  try {
+    const id = Number(req.params.id);
+    console.log('ADMIN DELETE INQUIRY request by user:', req.user?.id, req.user?.role, 'inquiryId:', id);
+    if (!id) return res.status(400).json({ message: 'Invalid inquiry id' });
+    await getDB().query('UPDATE contact SET is_archived = 1 WHERE id = ?', [id]);
+    return res.json({ message: 'Inquiry archived.' });
+  } catch (_error) {
+    return res.status(500).json({ message: 'Unable to delete inquiry.' });
+  }
+}
+
 async function getBookings(_req, res) {
   try {
     const [rows] = await getDB().query(
@@ -290,6 +304,7 @@ async function getBookings(_req, res) {
               budget, room_images AS roomImages, requirements,
               created_at AS createdAt
        FROM bookings
+       WHERE IFNULL(is_archived,0) = 0
        ORDER BY created_at DESC, id DESC`
     );
 
@@ -301,11 +316,24 @@ async function getBookings(_req, res) {
   }
 }
 
+async function deleteBooking(req, res) {
+  try {
+    const id = Number(req.params.id);
+    console.log('ADMIN DELETE BOOKING request by user:', req.user?.id, req.user?.role, 'bookingId:', id);
+    if (!id) return res.status(400).json({ message: 'Invalid booking id' });
+    await getDB().query('UPDATE bookings SET is_archived = 1 WHERE id = ?', [id]);
+    return res.json({ message: 'Booking archived.' });
+  } catch (_error) {
+    return res.status(500).json({ message: 'Unable to delete booking.' });
+  }
+}
+
 async function getFeedback(_req, res) {
   try {
     const [rows] = await getDB().query(
       `SELECT id, COALESCE(NULLIF(name, ''), user_name) AS name, email, rating, \`comment\` AS comment, page, created_at AS createdAt
        FROM reviews
+       WHERE IFNULL(is_archived,0) = 0
        ORDER BY created_at DESC, id DESC`
     );
 
@@ -314,6 +342,36 @@ async function getFeedback(_req, res) {
     return res.status(500).json({
       message: "Unable to fetch feedback."
     });
+  }
+}
+
+async function deleteFeedback(req, res) {
+  try {
+    const id = Number(req.params.id);
+    console.log('ADMIN DELETE FEEDBACK request by user:', req.user?.id, req.user?.role, 'feedbackId:', id);
+    if (!id) return res.status(400).json({ message: 'Invalid feedback id' });
+    await getDB().query('UPDATE reviews SET is_archived = 1 WHERE id = ?', [id]);
+    return res.json({ message: 'Feedback archived.' });
+  } catch (_error) {
+    return res.status(500).json({ message: 'Unable to delete feedback.' });
+  }
+}
+
+async function setAvatarUrl(req, res) {
+  try {
+    const avatar = String(req.body?.avatar || "").trim();
+    if (!avatar) return res.status(400).json({ message: "Avatar URL is required." });
+
+    // Basic validation: allow absolute http(s) URLs or local uploads path
+    if (!/^\/uploads\//.test(avatar) && !/^https?:\/\//.test(avatar)) {
+      return res.status(400).json({ message: "Avatar must be a full URL or a /uploads/... path." });
+    }
+
+    await getDB().query("UPDATE users SET avatar = ? WHERE id = ?", [avatar, req.user.id]);
+
+    return res.json({ avatar });
+  } catch (_error) {
+    return res.status(500).json({ message: "Unable to update avatar." });
   }
 }
 
@@ -326,4 +384,8 @@ module.exports = {
   getInquiries,
   getBookings,
   getFeedback
+  ,deleteInquiry
+  ,deleteBooking
+  ,deleteFeedback
+  ,setAvatarUrl
 };

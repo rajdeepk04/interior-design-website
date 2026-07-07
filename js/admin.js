@@ -128,11 +128,333 @@ if (adminBadge) {
   adminBadge.textContent = `Signed in as ${storedUser?.name || storedUser?.email || "Admin"}`;
 }
 
+const adminAvatarEl = document.getElementById("adminAvatar");
+if (adminAvatarEl) {
+  adminAvatarEl.src = resolveAssetUrl(storedUser?.avatar || storedUser?.picture) || getAdminFallbackImage();
+}
+
+const avatarIllustrationEl = document.getElementById('avatarIllustration');
+
+function updateAvatarIllustrationVisibility() {
+  if (!avatarIllustrationEl || !adminAvatarEl) return;
+  const hasCustom = Boolean(storedUser?.avatar) || String(adminAvatarEl.src || "").startsWith('data:');
+  avatarIllustrationEl.style.display = hasCustom ? 'none' : 'flex';
+}
+
+updateAvatarIllustrationVisibility();
+
+// Avatar upload flow
+const adminAvatarFileInput = document.getElementById("adminAvatarFile");
+if (adminAvatarEl && adminAvatarFileInput) {
+  adminAvatarEl.style.cursor = "pointer";
+  adminAvatarEl.title = "Click to change avatar";
+  adminAvatarEl.addEventListener("click", () => adminAvatarFileInput.click());
+
+  adminAvatarFileInput.addEventListener("change", async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    // Resize + crop to 256x256 before upload
+    setStatus("Preparing avatar...");
+    try {
+      const blob = await resizeAndCropImage(file, 256);
+
+      // show preview
+      const reader = new FileReader();
+      reader.onload = () => {
+        adminAvatarEl.src = reader.result;
+        updateAvatarIllustrationVisibility();
+      };
+      reader.readAsDataURL(blob);
+
+      const fd = new FormData();
+      fd.append("avatar", blob, "avatar.jpg");
+
+      setStatus("Uploading avatar...");
+
+      const res = await fetch(`${ADMIN_API}/avatar`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: fd
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || "Upload failed");
+      adminAvatarEl.src = resolveAssetUrl(data.avatar);
+      updateAvatarIllustrationVisibility();
+      setStatus("Avatar updated.");
+    } catch (err) {
+      setStatus(err.message || "Avatar upload failed.", true);
+    }
+  });
+}
+
+// Set avatar via URL (button)
+const setAvatarUrlBtn = document.getElementById('setAvatarUrlBtn');
+if (setAvatarUrlBtn) {
+  setAvatarUrlBtn.addEventListener('click', async () => {
+    const url = window.prompt('Enter an image URL (https://...) or a /uploads/... path:');
+    if (!url) return;
+    setStatus('Updating avatar...');
+    try {
+      const res = await fetch(`${ADMIN_API}/avatar/url`, {
+        method: 'POST',
+        headers: {
+          ...getAuthHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ avatar: url.trim() })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || 'Unable to set avatar');
+      adminAvatarEl.src = resolveAssetUrl(data.avatar);
+      // update localStorage luxeUser if present
+      try {
+        const current = JSON.parse(localStorage.getItem('luxeUser') || 'null') || {};
+        current.avatar = data.avatar;
+        localStorage.setItem('luxeUser', JSON.stringify(current));
+      } catch (_e) {}
+      updateAvatarIllustrationVisibility();
+      setStatus('Avatar updated.');
+    } catch (err) {
+      setStatus(err.message || 'Failed to update avatar', true);
+    }
+  });
+}
+
+/* Avatar cropping modal wiring */
+const cropModal = document.getElementById("cropModal");
+const cropBackdrop = document.getElementById("cropBackdrop");
+const cropCloseBtn = document.getElementById("cropCloseBtn");
+const cropCancelBtn = document.getElementById("cropCancelBtn");
+const cropApplyBtn = document.getElementById("cropApplyBtn");
+const cropCanvas = document.getElementById("cropCanvas");
+const cropZoom = document.getElementById("cropZoom");
+
+let cropImg = new Image();
+let cropState = {scale:1, x:0, y:0, dragging:false, startX:0, startY:0};
+
+function openCropModalWithFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      cropImg = new Image();
+      cropImg.onload = () => {
+        cropState = {scale:1, x:0, y:0, dragging:false, startX:0, startY:0};
+        cropZoom.value = 1;
+        showCropModal(true);
+        drawCrop();
+        resolve();
+      };
+      cropImg.onerror = reject;
+      cropImg.src = reader.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function showCropModal(open = true) {
+  if (!cropModal) return;
+  cropModal.setAttribute('data-open', open ? 'true' : 'false');
+  cropModal.setAttribute('aria-hidden', open ? 'false' : 'true');
+}
+
+function drawCrop() {
+  if (!cropCanvas || !cropImg) return;
+  const ctx = cropCanvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const w = cropCanvas.clientWidth;
+  const h = cropCanvas.clientHeight;
+  cropCanvas.width = Math.floor(w * dpr);
+  cropCanvas.height = Math.floor(h * dpr);
+  ctx.clearRect(0,0,cropCanvas.width,cropCanvas.height);
+
+  const scale = parseFloat(cropZoom.value || 1) * cropState.scale;
+  const iw = cropImg.width * scale;
+  const ih = cropImg.height * scale;
+
+  const cx = (cropCanvas.width - iw) / 2 + (cropState.x * dpr);
+  const cy = (cropCanvas.height - ih) / 2 + (cropState.y * dpr);
+
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(cropImg, 0, 0, cropImg.width, cropImg.height, cx, cy, iw, ih);
+}
+
+// pointer interactions
+if (cropCanvas) {
+  cropCanvas.addEventListener('pointerdown', (ev) => {
+    cropState.dragging = true;
+    cropState.startX = ev.clientX;
+    cropState.startY = ev.clientY;
+    cropCanvas.setPointerCapture(ev.pointerId);
+  });
+  cropCanvas.addEventListener('pointermove', (ev) => {
+    if (!cropState.dragging) return;
+    const dx = ev.clientX - cropState.startX;
+    const dy = ev.clientY - cropState.startY;
+    cropState.startX = ev.clientX;
+    cropState.startY = ev.clientY;
+    cropState.x += dx;
+    cropState.y += dy;
+    drawCrop();
+  });
+  cropCanvas.addEventListener('pointerup', (ev) => {
+    cropState.dragging = false;
+    try { cropCanvas.releasePointerCapture(ev.pointerId); } catch(e){}
+  });
+}
+
+if (cropZoom) {
+  cropZoom.addEventListener('input', () => drawCrop());
+}
+
+if (cropCloseBtn) cropCloseBtn.addEventListener('click', () => showCropModal(false));
+if (cropCancelBtn) cropCancelBtn.addEventListener('click', () => showCropModal(false));
+if (cropBackdrop) cropBackdrop.addEventListener('click', () => showCropModal(false));
+
+async function getCroppedBlob(size = 256) {
+  if (!cropCanvas) return null;
+  // Render final crop to an offscreen canvas at desired size
+  const tmp = document.createElement('canvas');
+  tmp.width = size;
+  tmp.height = size;
+  const ctx = tmp.getContext('2d');
+
+  // Determine current visible portion from cropCanvas
+  const sx = 0; const sy = 0; const sw = cropCanvas.width; const sh = cropCanvas.height;
+  ctx.drawImage(cropCanvas, sx, sy, sw, sh, 0, 0, size, size);
+
+  return await new Promise((resolve) => tmp.toBlob(resolve, 'image/jpeg', 0.92));
+}
+
+// when the user applies crop, get blob and upload
+if (cropApplyBtn) {
+  cropApplyBtn.addEventListener('click', async () => {
+    try {
+      setStatus('Applying crop...');
+      const blob = await getCroppedBlob(256);
+      if (!blob) throw new Error('Unable to produce cropped image');
+
+      // preview immediately
+      const reader = new FileReader();
+      reader.onload = () => { adminAvatarEl.src = reader.result; };
+      reader.readAsDataURL(blob);
+
+      const fd = new FormData();
+      fd.append('avatar', blob, 'avatar.jpg');
+      setStatus('Uploading avatar...');
+      const res = await fetch(`${ADMIN_API}/avatar`, { method: 'POST', headers: getAuthHeaders(), body: fd });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || 'Upload failed');
+      adminAvatarEl.src = resolveAssetUrl(data.avatar);
+      updateAvatarIllustrationVisibility();
+      setStatus('Avatar updated.');
+      showCropModal(false);
+    } catch (err) {
+      setStatus(err.message || 'Crop/upload failed', true);
+    }
+  });
+}
+
+// Hook to open crop modal when picking file
+if (adminAvatarFileInput) {
+  adminAvatarFileInput.addEventListener('change', async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    try {
+      await openCropModalWithFile(file);
+    } catch (err) {
+      setStatus('Unable to load image for cropping', true);
+    }
+  });
+}
+
+const searchInputEl = document.getElementById("searchInput");
+state.pagination = state.pagination || { page: 1, perPage: 8 };
+state.searchQuery = state.searchQuery || "";
+if (searchInputEl) {
+  searchInputEl.value = state.searchQuery;
+  searchInputEl.addEventListener("input", (e) => {
+    state.searchQuery = e.target.value || "";
+    state.pagination.page = 1;
+    renderDesigns();
+  });
+}
+
+// Clear field errors on user input
+["title","category","imageFile"].forEach((id) => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener("input", () => clearFieldError(id));
+  el.addEventListener("change", () => clearFieldError(id));
+});
+
+// Image preview helpers
+const imageFileInput = document.getElementById("imageFile");
+const heroFileInput = document.getElementById("heroImageFile");
+const galleryFilesInput = document.getElementById("galleryFiles");
+const imagePreview = document.getElementById("imagePreview");
+const heroPreview = document.getElementById("heroPreview");
+const galleryPreview = document.getElementById("galleryPreview");
+
+function clearPreviews() {
+  if (imagePreview) imagePreview.innerHTML = "";
+  if (heroPreview) heroPreview.innerHTML = "";
+  if (galleryPreview) galleryPreview.innerHTML = "";
+}
+
+function showImagePreview(file, container) {
+  if (!container) return;
+  const reader = new FileReader();
+  reader.onload = function (ev) {
+    const img = document.createElement("img");
+    img.src = ev.target.result;
+    container.innerHTML = "";
+    container.appendChild(img);
+  };
+  reader.readAsDataURL(file);
+}
+
+if (imageFileInput) {
+  imageFileInput.addEventListener("change", (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (file) showImagePreview(file, imagePreview);
+    else if (imagePreview) imagePreview.innerHTML = "";
+  });
+}
+
+if (heroFileInput) {
+  heroFileInput.addEventListener("change", (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (file) showImagePreview(file, heroPreview);
+    else if (heroPreview) heroPreview.innerHTML = "";
+  });
+}
+
+if (galleryFilesInput) {
+  galleryFilesInput.addEventListener("change", (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!galleryPreview) return;
+    galleryPreview.innerHTML = "";
+    files.slice(0, 6).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = function (ev) {
+        const img = document.createElement("img");
+        img.src = ev.target.result;
+        galleryPreview.appendChild(img);
+      };
+      reader.readAsDataURL(file);
+    });
+  });
+}
+
 function setStatus(message, isError = false) {
   statusMessage.textContent = message;
   statusMessage.style.background = isError ? "rgba(162, 59, 46, 0.14)" : "rgba(182, 139, 61, 0.16)";
   statusMessage.style.color = isError ? "#8b2f24" : "#6c3f24";
 }
+
+// Server-side soft-delete used; undo snackbar removed.
 
 function getAuthHeaders() {
   return {
@@ -179,6 +501,8 @@ function resetForm() {
   formHeading.textContent = "Add New Design";
   submitDesignBtn.textContent = "Save Design";
   cancelEditBtn.hidden = true;
+  clearPreviews();
+  updateSidebarCounts();
 }
 
 function fillForm(design) {
@@ -205,7 +529,6 @@ function createDesignCard(design) {
   const article = document.createElement("article");
   article.className = "card";
   const editLabel = "Edit";
-  const deleteButton = '<button type="button" class="danger-btn" data-action="delete">Delete</button>';
   article.innerHTML = `
     <img src="${design.image || design.heroImage || getAdminFallbackImage(design.mediaCategory || design.category)}" alt="${design.title}" data-fallback-image="${getAdminFallbackImage(design.mediaCategory || design.category)}">
     <div class="card-body">
@@ -220,7 +543,7 @@ function createDesignCard(design) {
       <p class="card-meta">${design.fromApi ? "Stored in admin database and live on the website" : "Website catalog design. Edit to publish changes from admin."}</p>
       <div class="card-actions">
         <button type="button" class="secondary-btn" data-action="edit">${editLabel}</button>
-        ${deleteButton}
+        <button type="button" class="danger-btn" data-action="delete">Delete</button>
       </div>
     </div>
   `;
@@ -236,13 +559,141 @@ function createDesignCard(design) {
 function renderDesigns() {
   designList.innerHTML = "";
 
-  if (!state.designs.length) {
+  const query = (state.searchQuery || "").trim().toLowerCase();
+  const filtered = state.designs.filter((d) => {
+    if (!query) return true;
+    return [d.title, d.category, d.style, d.description].some((field) =>
+      String(field || "").toLowerCase().includes(query)
+    );
+  });
+
+  const perPage = state.pagination?.perPage || 8;
+  const page = state.pagination?.page || 1;
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / perPage));
+  state.pagination = { page: Math.min(page, totalPages), perPage };
+
+  if (!filtered.length) {
     designList.innerHTML = '<p class="empty-state">No designs available yet.</p>';
+    document.getElementById("designPagination").innerHTML = "";
     return;
   }
 
-  state.designs.forEach((design) => {
+  const start = (state.pagination.page - 1) * perPage;
+  const pageItems = filtered.slice(start, start + perPage);
+
+  pageItems.forEach((design) => {
     designList.appendChild(createDesignCard(design));
+  });
+
+  renderPagination(totalPages);
+}
+
+function renderPagination(totalPages) {
+  const container = document.getElementById("designPagination");
+  container.innerHTML = "";
+
+  const prev = document.createElement("button");
+  prev.textContent = "← Prev";
+  prev.disabled = state.pagination.page <= 1;
+  prev.addEventListener("click", () => {
+    state.pagination.page = Math.max(1, state.pagination.page - 1);
+    renderDesigns();
+  });
+  container.appendChild(prev);
+
+  // page numbers
+  for (let i = 1; i <= totalPages; i++) {
+    const btn = document.createElement("button");
+    btn.textContent = String(i);
+    if (i === state.pagination.page) {
+      btn.style.fontWeight = "700";
+    }
+    btn.addEventListener("click", () => {
+      state.pagination.page = i;
+      renderDesigns();
+    });
+    container.appendChild(btn);
+  }
+
+  const next = document.createElement("button");
+  next.textContent = "Next →";
+  next.disabled = state.pagination.page >= totalPages;
+  next.addEventListener("click", () => {
+    state.pagination.page = Math.min(totalPages, state.pagination.page + 1);
+    renderDesigns();
+  });
+  container.appendChild(next);
+}
+
+function updateSidebarCounts() {
+  const counts = {
+    designs: state.designs.length || 0,
+    bookings: state.bookings.length || 0,
+    inquiries: state.inquiries.length || 0,
+    feedback: state.feedback.length || 0,
+    editor: state.editingDesignId ? 1 : 0
+  };
+
+  document.querySelectorAll('.nav-count').forEach((span) => {
+    const key = span.dataset.for;
+    span.textContent = counts[key] !== undefined ? counts[key] : '—';
+  });
+}
+
+function showFieldError(fieldId, message) {
+  try {
+    const el = document.getElementById(`error-${fieldId}`);
+    if (el) el.textContent = message || "";
+  } catch (_e) {}
+}
+
+function clearFieldError(fieldId) {
+  try {
+    const el = document.getElementById(`error-${fieldId}`);
+    if (el) el.textContent = "";
+  } catch (_e) {}
+}
+
+function clearAllFieldErrors() {
+  ["title", "category", "imageFile"].forEach(clearFieldError);
+}
+
+// Helper: center-crop and resize image to square of `size` px, returns Blob
+function resizeAndCropImage(file, size = 256) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      img.onload = function () {
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = size;
+          canvas.height = size;
+          const ctx = canvas.getContext("2d");
+
+          const minSide = Math.min(img.width, img.height);
+          const sx = (img.width - minSide) / 2;
+          const sy = (img.height - minSide) / 2;
+
+          ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
+
+          canvas.toBlob((blob) => {
+            if (!blob) {
+              reject(new Error("Unable to process image"));
+              return;
+            }
+            resolve(blob);
+          }, "image/jpeg", 0.9);
+        } catch (err) {
+          reject(err);
+        }
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
   });
 }
 
@@ -257,17 +708,20 @@ function renderInquiries() {
   state.inquiries.forEach((inquiry) => {
     const article = document.createElement("article");
     article.className = "inquiry-card";
-    article.innerHTML = `
-      <div class="inquiry-head">
-        <div>
-          <h4>${inquiry.name || "Guest"}</h4>
-          <p class="inquiry-meta">${inquiry.email || "No email"}${inquiry.phone ? ` | ${inquiry.phone}` : ""}</p>
+      const safeEmail = inquiry.email ? String(inquiry.email).trim() : '';
+      const mailto = safeEmail ? `mailto:${encodeURIComponent(safeEmail)}?subject=${encodeURIComponent('Re: ' + (inquiry.subject || inquiry.name || 'Your inquiry'))}` : "";
+      article.innerHTML = `
+        <div class="inquiry-head">
+          <div>
+            <h4>${inquiry.name || "Guest"}</h4>
+            <p class="inquiry-meta">${safeEmail ? `<a href="${mailto}" class="reply-email">${safeEmail}</a>` : 'No email'}${inquiry.phone ? ` | ${inquiry.phone}` : ""}</p>
+          </div>
+          <span class="card-tag">${inquiry.subject || "General inquiry"}</span>
         </div>
-        <span class="card-tag">${inquiry.subject || "General inquiry"}</span>
-      </div>
-      <p>${inquiry.message || ""}</p>
-      <p class="inquiry-meta">${new Date(inquiry.createdAt).toLocaleString()}</p>
-    `;
+        <p>${inquiry.message || ""}</p>
+        <p class="inquiry-meta">${new Date(inquiry.createdAt).toLocaleString()}</p>
+          <div class="card-actions"></div>
+      `;
     inquiryList.appendChild(article);
   });
 }
@@ -294,11 +748,14 @@ function renderBookings() {
       : `<p><strong>Room Images:</strong> Not uploaded</p>`;
     const article = document.createElement("article");
     article.className = "inquiry-card";
+    const bkEmail = booking.email ? String(booking.email).trim() : '';
+    const bkSubject = encodeURIComponent('Re: ' + (booking.projectType || 'Booking')); 
+    const bkMailto = bkEmail ? `mailto:${encodeURIComponent(bkEmail)}?subject=${bkSubject}` : '';
     article.innerHTML = `
       <div class="inquiry-head">
         <div>
           <h4>${booking.name || "Guest"}</h4>
-          <p class="inquiry-meta">${booking.email || "No email"}${booking.timeSlot ? ` | ${booking.timeSlot}` : ""}</p>
+          <p class="inquiry-meta">${bkEmail ? `<a href="${bkMailto}" class="reply-email">${bkEmail}</a>` : 'No email'}${booking.timeSlot ? ` | ${booking.timeSlot}` : ""}</p>
         </div>
         <span class="card-tag">${booking.projectType || "Consultation"}</span>
       </div>
@@ -307,6 +764,7 @@ function renderBookings() {
       ${bookingImagesMarkup}
       <p>${booking.requirements || "No extra requirements shared."}</p>
       <p class="inquiry-meta">${new Date(booking.createdAt).toLocaleString()}</p>
+      <div class="card-actions"></div>
     `;
     article.querySelectorAll(".booking-image-thumb").forEach((image) => {
       image.addEventListener("error", () => {
@@ -328,18 +786,22 @@ function renderFeedback() {
   state.feedback.forEach((item) => {
     const article = document.createElement("article");
     article.className = "inquiry-card";
+    const fbEmail = item.email ? String(item.email).trim() : '';
+    const fbMailto = fbEmail ? `mailto:${encodeURIComponent(fbEmail)}?subject=${encodeURIComponent('Re: Feedback')}` : '';
     article.innerHTML = `
       <div class="inquiry-head">
         <div>
           <h4>${item.name || "Anonymous"}</h4>
-          <p class="inquiry-meta">${item.email || "No email"}${item.page ? ` | ${item.page}` : ""}</p>
+          <p class="inquiry-meta">${fbEmail ? `<a href="${fbMailto}" class="reply-email">${fbEmail}</a>` : 'No email'}${item.page ? ` | ${item.page}` : ""}</p>
         </div>
         <span class="card-tag">${item.rating}/5</span>
       </div>
       <p>${item.comment || ""}</p>
       <p class="inquiry-meta">${new Date(item.createdAt).toLocaleString()}</p>
+      <div class="card-actions"></div>
     `;
     feedbackList.appendChild(article);
+    
   });
 }
 
@@ -356,6 +818,7 @@ async function loadDesigns() {
   const catalogDesigns = Array.isArray(window.DESIGN_LIBRARY) ? window.DESIGN_LIBRARY : [];
   state.designs = mergeDesignSources(apiDesigns, catalogDesigns);
   renderDesigns();
+  updateSidebarCounts();
 }
 
 async function loadBookings() {
@@ -369,6 +832,7 @@ async function loadBookings() {
 
   state.bookings = await response.json();
   renderBookings();
+  updateSidebarCounts();
 }
 
 async function loadInquiries() {
@@ -382,6 +846,7 @@ async function loadInquiries() {
 
   state.inquiries = await response.json();
   renderInquiries();
+  updateSidebarCounts();
 }
 
 async function loadFeedback() {
@@ -399,6 +864,7 @@ async function loadFeedback() {
 
   state.feedback = await response.json();
   renderFeedback();
+  updateSidebarCounts();
 }
 
 async function deleteDesign(design) {
@@ -434,6 +900,34 @@ async function deleteDesign(design) {
 
 async function submitDesignForm(event) {
   event.preventDefault();
+  // Inline validation
+  const titleValue = formFields.title.value && formFields.title.value.trim();
+  const categoryValue = formFields.category.value && formFields.category.value.trim();
+  clearAllFieldErrors();
+
+  let hasError = false;
+  if (!titleValue) {
+    showFieldError("title", "Title is required.");
+    hasError = true;
+  }
+  if (!categoryValue) {
+    showFieldError("category", "Category is required.");
+    hasError = true;
+  }
+
+  // Ensure there is either a selected file or an image URL
+  const fileInput = document.getElementById("imageFile");
+  const imageUrl = (formFields.image && formFields.image.value && formFields.image.value.trim()) || "";
+  const hasFile = fileInput && fileInput.files && fileInput.files.length > 0;
+  if (!hasFile && !imageUrl && !state.editingDesignId) {
+    showFieldError("imageFile", "Main image file or image URL is required.");
+    hasError = true;
+  }
+
+  if (hasError) {
+    setStatus("Please fix validation errors.", true);
+    return;
+  }
 
   const formData = new FormData(designForm);
   if (state.catalogIdentity) {

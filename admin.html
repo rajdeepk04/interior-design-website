@@ -18,15 +18,33 @@
         <p class="sidebar-copy">Manage the design portfolio, upload real images, and review contact inquiries from one place.</p>
       </div>
       <nav class="sidebar-nav">
-        <button type="button" data-section-target="designs" class="active">All Designs</button>
-        <button type="button" data-section-target="editor">Add or Edit Design</button>
-        <button type="button" data-section-target="bookings">Bookings</button>
-        <button type="button" data-section-target="inquiries">Inquiries</button>
-        <button type="button" data-section-target="feedback">Feedback</button>
+        <button type="button" data-section-target="designs" class="active">All Designs <span class="nav-count" data-for="designs">0</span></button>
+        <button type="button" data-section-target="editor">Add / Edit <span class="nav-count" data-for="editor">—</span></button>
+        <button type="button" data-section-target="bookings">Bookings <span class="nav-count" data-for="bookings">0</span></button>
+        <button type="button" data-section-target="inquiries">Inquiries <span class="nav-count" data-for="inquiries">0</span></button>
+        <button type="button" data-section-target="feedback">Feedback <span class="nav-count" data-for="feedback">0</span></button>
       </nav>
       <div class="sidebar-footer">
-        <div class="admin-badge" id="adminBadge">Signed in as admin</div>
-        <button type="button" class="logout-btn" id="logoutBtn">Logout</button>
+        <div class="admin-avatar-wrap">
+        <img src="images/profile.png" class="admin-avatar" alt="admin"/>
+          <!-- <div id="avatarIllustration" class="avatar-illustration" aria-hidden="true">
+          
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M12 2C8.13 2 5 5.13 5 9c0 2.21 1.79 4 4 4h1c.55 0 1 .45 1 1s-.45 1-1 1H9c-2.76 0-5 2.24-5 5 0 .55.45 1 1 1h8c4.97 0 9-4.03 9-9 0-3.87-3.13-7-7-7h-3z" fill="#b68b3d" />
+              <circle cx="7.5" cy="9.5" r="1.5" fill="#fff" />
+              <circle cx="11" cy="7" r="1" fill="#fff" />
+              <circle cx="14.5" cy="9.5" r="1" fill="#fff" />
+            </svg>
+          </div> -->
+      </div>
+        <!-- Avatar file input intentionally hidden (upload via crop modal). -->
+        <div style="display:flex;flex-direction:column;align-items:flex-start;">
+          <div class="admin-badge" id="adminBadge">Signed in as admin</div>
+          <div style="display:flex;gap:8px;flex-direction:column;">
+            <!-- <button type="button" class="secondary-btn" id="setAvatarUrlBtn">Set avatar by URL</button> -->
+            <button type="button" class="logout-btn" id="logoutBtn">Logout</button>
+          </div>
+        </div>
       </div>
     </header>
 
@@ -36,7 +54,10 @@
           <p class="eyebrow">Dashboard</p>
           <h2 id="sectionHeading">Manage All Designs</h2>
         </div>
-        <div class="status-pill" id="statusMessage">Ready</div>
+        <div style="display:flex;gap:12px;align-items:center;">
+          <input id="searchInput" class="search-input" placeholder="Search designs, category or style" />
+          <div class="status-pill" id="statusMessage">Ready</div>
+        </div>
       </header>
 
       <section id="designs" class="section active">
@@ -45,6 +66,7 @@
           <button type="button" class="secondary-btn" id="createDesignBtn">Add New Design</button>
         </div>
         <div id="designList" class="grid"></div>
+        <div id="designPagination" class="pagination" aria-label="Design pagination"></div>
       </section>
 
       <section id="editor" class="section">
@@ -57,6 +79,7 @@
             <label>
               <span>Title</span>
               <input type="text" id="title" name="title" required>
+              <div class="field-error" id="error-title" aria-live="polite"></div>
             </label>
             <label>
               <span>Category</span>
@@ -67,6 +90,7 @@
                 <option value="bedroom">Bedroom</option>
                 <option value="bathroom">Bathroom</option>
               </select>
+              <div class="field-error" id="error-category" aria-live="polite"></div>
             </label>
             <label>
               <span>Style</span>
@@ -87,7 +111,9 @@
             <label>
               <span>Main Image</span>
               <input type="file" id="imageFile" name="image" accept="image/*">
+              <div class="field-error" id="error-imageFile" aria-live="polite"></div>
             </label>
+            <div id="imagePreview" class="image-preview"></div>
             <label>
               <span>Main Image URL</span>
               <input type="text" id="image" name="image" placeholder="/uploads/designs/example.jpg or https://...">
@@ -96,6 +122,7 @@
               <span>Hero Image</span>
               <input type="file" id="heroImageFile" name="heroImage" accept="image/*">
             </label>
+            <div id="heroPreview" class="image-preview"></div>
             <label>
               <span>Hero Image URL</span>
               <input type="text" id="heroImage" name="heroImage" placeholder="/uploads/designs/example-hero.jpg or https://...">
@@ -104,6 +131,7 @@
               <span>Gallery Images</span>
               <input type="file" id="galleryFiles" name="gallery" accept="image/*" multiple>
             </label>
+            <div id="galleryPreview" class="gallery-preview"></div>
             <label class="full-width">
               <span>Gallery URLs</span>
               <input type="text" id="gallery" name="gallery" placeholder="Comma-separated image URLs if you are not uploading files">
@@ -149,6 +177,34 @@
       </section>
     </main>
   </div>
+
+  <!-- Avatar cropping modal -->
+  <div id="cropModal" class="crop-modal" aria-hidden="true">
+    <div class="crop-backdrop" id="cropBackdrop"></div>
+    <div class="crop-dialog" role="dialog" aria-modal="true" aria-label="Crop avatar">
+      <div class="crop-header">
+        <h4>Crop Avatar</h4>
+        <button type="button" id="cropCloseBtn" class="secondary-btn">Close</button>
+      </div>
+      <div class="crop-area">
+        <div class="crop-stage" id="cropStage">
+          <canvas id="cropCanvas"></canvas>
+        </div>
+        <div class="crop-controls">
+          <label>Zoom
+            <input type="range" id="cropZoom" min="1" max="3" step="0.01" value="1">
+          </label>
+          <div style="margin-top:12px;display:flex;gap:8px;">
+            <button type="button" id="cropApplyBtn" class="primary-btn">Apply Crop</button>
+            <button type="button" id="cropCancelBtn" class="secondary-btn">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Undo snackbar -->
+  <!-- Undo snackbar removed: server-side archive used instead -->
 
   <script src="js/design-data.js"></script>
   <script src="js/admin.js"></script>

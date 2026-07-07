@@ -21,6 +21,7 @@ const bookingRoutes = require("./routes/bookingRoutes");
 const reviewRoutes = require("./routes/reviewRoutes");
 const contactRoutes = require("./routes/contactroute");
 const adminRoutes = require("./routes/adminroute");
+const debugRoutes = require("./routes/debugRoutes");
 
 const { notFound, errorHandler } = require("./middleware/errormiddleware");
 const { initializeDatabase } = require("./database/db");
@@ -312,6 +313,7 @@ app.use("/api/reviews", reviewRoutes);
 
 app.use("/api/contact", contactRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/debug", debugRoutes);
 
 
 // ================================
