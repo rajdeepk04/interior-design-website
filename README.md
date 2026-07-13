@@ -79,46 +79,78 @@ PORT=5000
 
 4. Start the server
 ```bash
-node server.js
+npm run start
 ```
 
-5. Open the frontend by launching `frontend/html/index.html` in your browser or use a local server.
+Notes:
+- On first run the backend will create the database and tables automatically and seed a few sample designs. See [backend/database/db.js](backend/database/db.js) for details.
+- SMTP is verified at startup; if `EMAIL_PASS` or `EMAIL_USER` is missing the server will log that status.
+
+**Frontend (static)**
+
+- The frontend is plain HTML/CSS/JS in the repository root. Open `index.html` in a browser, or serve the project root with a static server (e.g., `live-server` or `http-server`):
+
+```bash
+# from project root
+npx http-server -c-1 . -p 8080
+# then open http://localhost:8080
+```
+
+**Important files**
+- Server entry: [backend/server.js](backend/server.js)
+- DB initialization & pool: [backend/database/db.js](backend/database/db.js)
+- API controllers: [backend/controllers](backend/controllers)
+- Routes: [backend/routes](backend/routes)
+- Environment helper: [backend/config/db.js](backend/config/db.js)
+
+**Useful API endpoints**
+- Health: `GET /api/health`
+- Designs: `GET /api/designs`, `GET /api/designs/:id`
+- Auth test: `GET /api/auth/test`
+- Wishlist: `GET /api/wishlist?userId={id}`, `POST /api/wishlist`, `DELETE /api/wishlist/:id`
+
+Example curl to list designs:
+
+```bash
+curl http://localhost:5000/api/designs
+```
+
+**Troubleshooting**
+- If server fails to start: check `backend/.env` values and MySQL credentials.
+- Port conflict: change `PORT` in `.env` or stop other services using the port.
+- SMTP errors: verify `EMAIL_USER` and `EMAIL_PASS`, and consider app-specific passwords for Gmail.
+
+**Next steps / suggestions**
+- Add unit / integration tests for API controllers.
+- Add CI workflow to run lint/tests and ensure env secrets are managed.
+- Optionally containerize with Docker for consistent development environments.
 
 ---
 
-## 🔗 API Endpoints
+If you want, I can now: run the frontend in a browser, wire up auth flows, or add a simple Postman collection with example requests.
+# Interior Design Project
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/health` | Server health |
-| GET | `/api/designs` | Get all designs |
-| GET | `/api/designs/:id` | Get design details |
-| POST | `/api/bookings` | Create booking |
-| POST | `/api/contact` | Send contact message |
-| POST | `/api/reviews` | Submit review |
-| POST | `/api/auth/register` | Register user |
-| POST | `/api/auth/login` | User login |
+This project is organized with language-wise separation:
 
----
+- `backend/` contains the Node.js and Express API.
+- `frontend/html/` contains website pages.
+- `frontend/css/` contains styling files.
+- `frontend/js/` contains browser-side JavaScript.
+- `frontend/images/` contains UI images.
+- `docs/` contains API notes and the project report.
 
-## 📌 Future Improvements
+## Run the backend
 
-- Payment integration
-- Image uploads
-- Email notifications
-- Admin analytics dashboard
-- Multi-language support
+```bash
+cd backend
+npm start
+```
 
----
+## Main frontend pages
 
-## 👨‍💻 Author
-
-**Rajdeep**
-
-- GitHub: https://github.com/rajdeepk04
-- Portfolio: https://rajdeepk04.github.io/portfolio/
-- LinkedIn: www.linkedin.com/in/rajdeep-uiux
-
----
-
-⭐ If you like this project, don't forget to give it a **Star** on GitHub!
+- `frontend/html/index.html`
+- `frontend/html/designs.html`
+- `frontend/html/design-details.html`
+- `frontend/html/wishlist.html`
+- `frontend/html/booking.html`
+- `frontend/html/contact.html`
