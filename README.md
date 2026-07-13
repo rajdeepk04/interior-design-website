@@ -38,7 +38,7 @@ PORT=5000
 3. Start the backend:
 
 ```bash
-npm run start
+node server.js
 ```
 
 Notes:
