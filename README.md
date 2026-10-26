@@ -79,7 +79,7 @@ PORT=5000
 
 4. Start the server
 ```bash
-npm run start
+node serverr.js
 ```
 
 Notes:
